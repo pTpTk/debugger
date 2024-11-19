@@ -23,7 +23,7 @@ namespace {
 
 void Debugger::run() {
     int wait_status;
-    waitpid(program_pid, &wait_status, 0);
+    waitpid(pid, &wait_status, 0);
 
     char* line = nullptr;
     while((line = linenoise("dbg> ")) != nullptr) {
@@ -40,15 +40,26 @@ void Debugger::handle_command(const std::string& line) {
     if(is_abbrev(command, "continue")) {
         continue_execution();
     }
+    else if(is_abbrev(command, "break")) {
+        std::string addr {args[1], 2}; // naively assume that the user has written 0xADDRESS
+        set_breakpoint(std::stol(addr, 0, 16));
+    }
     else {
         std::cerr << "Unknown command\n";
     }
 }
 
 void Debugger::continue_execution() {
-    ptrace(PTRACE_CONT, program_pid, nullptr, nullptr);
+    ptrace(PTRACE_CONT, pid, nullptr, nullptr);
 
     int wait_status;
     auto options = 0;
-    waitpid(program_pid, &wait_status, options);
+    waitpid(pid, &wait_status, options);
+}
+
+void Debugger::set_breakpoint(std::intptr_t addr) {
+    std::cout << "Set breakpoint at address 0x" << std::hex << addr << std::endl;
+    Breakpoint bp{pid, addr};
+    bp.enable();
+    breakpoints[addr] = bp;
 }

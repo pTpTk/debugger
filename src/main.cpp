@@ -2,6 +2,7 @@
 #include <cassert>
 #include <iostream>
 #include <sys/ptrace.h>
+#include <sys/personality.h>
 
 #include "debugger.h"
 
@@ -18,13 +19,13 @@ int main(int argc, char** argv) {
     assert(pid >= 0);
 
     if(pid) { // parent process (debugger)
-        std::cout << "pid = " << pid << " parent\n";
+        std::cout << "child pid: " << pid << std::endl;
 
         Debugger dbg(program, pid);
         dbg.run();
     }
     else { // child process (debugee)
-        std::cout << "pid = " << pid << " child\n";
+        personality(ADDR_NO_RANDOMIZE);
         ptrace(PTRACE_TRACEME, 0, nullptr, nullptr);
         execl(program, program, nullptr);
 
