@@ -1,2 +1,2 @@
 all:
-	g++ hello.cpp -o hello
+	g++ hello.cpp -o hello -gdwarf-4
