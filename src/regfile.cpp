@@ -1,17 +1,5 @@
 #include "regfile.h"
 
-enum class reg
-{
-    rax, rbx, rcx, rdx,
-    rdi, rsi, rbp, rsp,
-    r8,  r9,  r10, r11,
-    r12, r13, r14, r15,
-    rip, rflags,    cs,
-    orig_rax, fs_base,
-    gs_base,
-    fs, gs, ss, ds, es
-};
-
 std::unordered_map<std::string, reg> reg_names
 {
     {"rax"     , reg::rax     },
@@ -83,6 +71,12 @@ void Regfile::reg_read(const std::string& reg) {
     reg_get();
     int index = (int)reg_names[reg];
     std::cout << reg << "\t0x" << std::hex << regs[index] << std::endl;
+}
+
+std::intptr_t Regfile::reg_read(const reg r) {
+    reg_get();
+    int index = (int)r;
+    return regs[index];
 }
 
 void Regfile::reg_write(const std::string& reg, uint64_t val) {

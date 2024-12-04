@@ -123,6 +123,14 @@ void Debugger::handle_command(const std::string& line) {
             reg_write(args[2], std::stol(val, 0, 16));
         }
     }
+    else if(is_abbrev(command, "step")) {
+        step_in();
+    }
+    else if(is_abbrev(command, "stepi")) {
+        step_inst();
+        auto line_entry = get_line_entry_from_pc(get_pc());
+        print_source(line_entry->file->path, line_entry->line);
+    }
     else {
         std::cerr << "Unknown command\n";
     }
@@ -130,6 +138,10 @@ void Debugger::handle_command(const std::string& line) {
 
 std::intptr_t Debugger::get_pc() {
     return regfile.get_pc();
+}
+
+std::intptr_t Debugger::get_offset_pc() {
+    return offset_load_addr(get_pc());
 }
 
 void Debugger::set_pc(std::intptr_t pc) {
@@ -241,3 +253,41 @@ void Debugger::print_source(const std::string& file_name, unsigned line, unsigne
     //Write newline and make sure that the stream is flushed properly
     std::cout << std::endl;
 }
+
+void Debugger::single_step() {
+    ptrace(PTRACE_SINGLESTEP, pid, nullptr, nullptr);
+    wait_for_signal();
+}
+
+void Debugger::step_inst() {
+    auto it = breakpoints.find(get_pc());
+
+    // regular case: no breakpoint set on inst
+    if(it == breakpoints.end()) {
+        single_step();
+        return;
+    }
+    
+    // breakpoint set on inst
+    if(it->second.is_enabled()) {
+        it->second.disable();       // restore inst
+        ptrace(PTRACE_SINGLESTEP, pid, nullptr, nullptr);
+
+        wait_for_signal();
+
+        it->second.enable();
+    }
+}
+
+void Debugger::step_in() {
+    auto line = get_line_entry_from_pc(get_offset_pc())->line;
+
+    while (get_line_entry_from_pc(get_offset_pc())->line == line) {
+        step_inst();
+    }
+
+    auto line_entry = get_line_entry_from_pc(get_offset_pc());
+    print_source(line_entry->file->path, line_entry->line);
+}
+
+
