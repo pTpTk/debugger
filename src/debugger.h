@@ -44,6 +44,7 @@ class Debugger
 
     void initialize_load_addr();
     uint64_t offset_load_addr(uint64_t addr);
+    uint64_t offset_dwarf_address(uint64_t addr);
     
     std::intptr_t get_pc();
     std::intptr_t get_offset_pc();
@@ -55,6 +56,7 @@ class Debugger
 
     // breakpoint
     void set_breakpoint(std::intptr_t addr);
+    void set_breakpoint_at_line(const std::string& file, unsigned line);
 
     // register
     void reg_dump();
@@ -70,5 +72,4 @@ class Debugger
     void single_step();
     void step_inst();
     void step_in();
-    void step_out();
 };

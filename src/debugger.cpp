@@ -108,8 +108,14 @@ void Debugger::handle_command(const std::string& line) {
         continue_execution();
     }
     else if(is_abbrev(command, "break")) {
-        std::string addr {args[1], 2}; // naively assume that the user has written 0xADDRESS
-        set_breakpoint(std::stol(addr, 0, 16));
+        if(args[1][0] == '0' && args[1][1] == 'x') {
+            std::string addr {args[1], 2}; // naively assume that the user has written 0xADDRESS
+            set_breakpoint(std::stol(addr, 0, 16));
+        }
+        else {
+            auto file_and_line = split(args[1], ':');
+            set_breakpoint_at_line(file_and_line[0], std::stoi(file_and_line[1]));
+        }
     }
     else if(is_abbrev(command, "register")) {
         if (is_abbrev(args[1], "dump")) {
@@ -290,4 +296,22 @@ void Debugger::step_in() {
     print_source(line_entry->file->path, line_entry->line);
 }
 
+uint64_t Debugger::offset_dwarf_address(uint64_t addr) {
+    return addr + load_addr;
+}
 
+
+void Debugger::set_breakpoint_at_line(const std::string& file, unsigned line) {
+    for (const auto& cu : m_dwarf.compilation_units()) {
+        if (is_abbrev(file, at_name(cu.root()))) {
+            const auto& lt = cu.get_line_table();
+
+            for (const auto& entry : lt) {
+                if (entry.is_stmt && entry.line == line) {
+                    set_breakpoint(offset_dwarf_address(entry.address));
+                    return;
+                }
+            }
+        }
+    }
+}
