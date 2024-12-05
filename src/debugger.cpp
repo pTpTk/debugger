@@ -117,6 +117,9 @@ void Debugger::handle_command(const std::string& line) {
             set_breakpoint_at_line(file_and_line[0], std::stoi(file_and_line[1]));
         }
     }
+    else if(is_abbrev(command, "backtrace")) {
+        backtrace();
+    }
     else if(is_abbrev(command, "register")) {
         if (is_abbrev(args[1], "dump")) {
             reg_dump();
@@ -300,7 +303,6 @@ uint64_t Debugger::offset_dwarf_address(uint64_t addr) {
     return addr + load_addr;
 }
 
-
 void Debugger::set_breakpoint_at_line(const std::string& file, unsigned line) {
     for (const auto& cu : m_dwarf.compilation_units()) {
         if (is_abbrev(file, at_name(cu.root()))) {
@@ -313,5 +315,33 @@ void Debugger::set_breakpoint_at_line(const std::string& file, unsigned line) {
                 }
             }
         }
+    }
+}
+
+uint64_t Debugger::mem_read(std::intptr_t addr) {
+    return ptrace(PTRACE_PEEKDATA, pid, addr, nullptr);
+}
+
+
+void Debugger::backtrace() {
+    auto output_frame = [frame_number = 0, this] (auto&& func) mutable {
+        std::cout << "frame #" << frame_number++ << ": 0x" << offset_dwarf_address(dwarf::at_low_pc(func))
+                  << " " << dwarf::at_name(func) << std::endl;
+    };
+
+    auto current_func = get_function_from_pc(get_offset_pc());
+    output_frame(current_func);
+
+    auto frame_pointer = regfile.reg_read(reg::rbp);
+    auto return_addr = mem_read(frame_pointer+8);
+
+    std::cout << "frame_pointer: 0x" << frame_pointer << std::endl;
+    std::cout << "return addr: 0x" << return_addr << std::endl;
+
+    while (dwarf::at_name(current_func) != "main") {
+        current_func = get_function_from_pc(offset_load_addr(return_addr));
+        output_frame(current_func);
+        frame_pointer = mem_read(frame_pointer);
+        return_addr = mem_read(frame_pointer+8);
     }
 }

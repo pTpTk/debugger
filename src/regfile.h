@@ -8,14 +8,33 @@
 
 enum class reg
 {
-    rax, rbx, rcx, rdx,
-    rdi, rsi, rbp, rsp,
-    r8,  r9,  r10, r11,
-    r12, r13, r14, r15,
-    rip, rflags,    cs,
-    orig_rax, fs_base,
+    r15, 
+    r14,
+    r13,
+    r12,
+    rbp,
+    rbx,
+    r11,
+    r10,
+    r9,
+    r8,
+    rax,
+    rcx,
+    rdx,
+    rsi,
+    rdi,
+    orig_rax,
+    rip,
+    cs,
+    eflags,
+    rsp,
+    ss,
+    fs_base,
     gs_base,
-    fs, gs, ss, ds, es
+    ds,
+    es,
+    fs,
+    gs
 };
 
 class Regfile

@@ -41,6 +41,7 @@ class Debugger
     void wait_for_signal();
     void handle_sigtrap(siginfo_t info);
 
+    uint64_t mem_read(std::intptr_t addr);
 
     void initialize_load_addr();
     uint64_t offset_load_addr(uint64_t addr);
@@ -72,4 +73,7 @@ class Debugger
     void single_step();
     void step_inst();
     void step_in();
+
+    // backtrace
+    void backtrace();
 };
